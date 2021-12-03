@@ -53,8 +53,7 @@ def o2_gen_rating(puzzle: Iterable[str]) -> str:
     for bit_pos in range(len(puzzle[0])):
         iterators = [list() for _ in range(len(puzzle[0]))]
         for line in candidates:
-            for index, char in enumerate(line):
-                iterators[index].append(char)
+            iterators[bit_pos].append(line[bit_pos])
         digit_counters = [Counter(group) for group in iterators]
 
         counter = digit_counters[bit_pos]
@@ -86,8 +85,7 @@ def co2_scrub_rating(puzzle: Iterable[str]) -> str:
     for bit_pos in range(len(puzzle[0])):
         iterators = [list() for _ in range(len(puzzle[0]))]
         for line in candidates:
-            for index, char in enumerate(line):
-                iterators[index].append(char)
+            iterators[bit_pos].append(line[bit_pos])
         digit_counters = [Counter(group) for group in iterators]
         counter = digit_counters[bit_pos]
         candidate_chars = [
