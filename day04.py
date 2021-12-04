@@ -102,8 +102,8 @@ class Bingo:
         self.part_two = part_two
 
     def go(self) -> int:
-        last_winners = []
-        most_recent_single = None, None
+        most_recent_winner = None
+        most_recent_draw = None
         for draw in self.draws:
             hits = [
                 board
@@ -111,26 +111,22 @@ class Bingo:
                 if not board.is_winner() and board.draw(draw)
             ]
             winners = [board for board in hits if board.is_winner()]
-            if winners != last_winners:
-                most_recent_winners = [i for i in winners if i not in last_winners]
-                most_recent_draw = draw
-                last_winners = winners
             if len(winners) == 1:
-                most_recent_single = winners[0], most_recent_draw
+                most_recent_winner = winners[0]
+                most_recent_draw = draw
             if winners:
                 if not self.part_two:
                     assert len(winners) == 1
                     return winners[0].score() * draw
                 else:
                     if len(winners) == len(self.boards):
-                        try:
-                            return most_recent_winners[0].score() * draw
-                        except IndexError:
-                            assert most_recent_single != (None, None)
-                            return most_recent_single[0].score() * most_recent_single[1]
+                        assert most_recent_draw is not None
+                        assert most_recent_winner is not None
+                        return most_recent_winner.score() * most_recent_draw
         if self.part_two:
-            assert most_recent_single != (None, None)
-            return most_recent_single[0].score() * most_recent_single[1]
+            assert most_recent_draw is not None
+            assert most_recent_winner is not None
+            return most_recent_winner.score() * most_recent_draw
         raise ValueError("no winner found?")
 
 
