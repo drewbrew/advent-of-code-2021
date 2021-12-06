@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Optional
 
 
@@ -37,15 +37,17 @@ def part_one(puzzle_input: str, days: int = 80):
 def part_two(puzzle_input: str, days: int = 256):
     school = Counter([int(i.strip()) for i in puzzle_input.split(",")])
     for _ in range(days):
-        new_school = defaultdict(lambda: 0)
-        for timer, number_of_fish in school.items():
-            if timer == 0:
-                # using a defaultdict with += so we don't obliterate fish going from 7 to 6
-                new_school[6] += number_of_fish
-                new_school[8] += number_of_fish
-            else:
-                new_school[timer - 1] += number_of_fish
-        school = new_school
+        school = {
+            0: school.get(1, 0),
+            1: school.get(2, 0),
+            2: school.get(3, 0),
+            3: school.get(4, 0),
+            4: school.get(5, 0),
+            5: school.get(6, 0),
+            6: school.get(7, 0) + school.get(0, 0),
+            7: school.get(8, 0),
+            8: school.get(0, 0),
+        }
     return sum(school.values())
 
 
