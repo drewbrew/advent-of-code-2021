@@ -10,6 +10,6 @@ fastest or best solutions, but they work.
 
 ## How do I run them?
 
-Download and install Python 3.10 as well as pipenv.
+Download and install Python 3.10.
 
-Save your day's input as `dayX.txt`, then run `pipenv run python dayX.py`.
+Save your day's input as `dayX.txt`, then run `python3.10 dayX.py`.
