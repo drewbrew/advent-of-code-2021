@@ -1,21 +1,7 @@
 from collections import Counter
-from typing import Optional
 
 
 TEST_INPUT = "3,4,3,1,2"
-
-
-class Lanternfish:
-    def __init__(self, timer: int) -> None:
-        self.timer = timer
-
-    def advance_timer(self) -> Optional["Lanternfish"]:
-        print("advance", self.timer)
-        if not self.timer:
-            self.timer = 6
-            print("spawning!")
-            return Lanternfish(8)
-        self.timer -= 1
 
 
 def part_one(puzzle_input: str, days: int = 80):
