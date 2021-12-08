@@ -1,5 +1,6 @@
 from typing import Iterable
 from itertools import permutations
+import sys
 
 
 TEST_INPUT = """be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe
@@ -12,6 +13,34 @@ dbcfg fgd bdegcaf fgec aegbdf ecdfab fbedc dacgb gdcebf gf | cefg dcbef fcge gbc
 bdfegc cbegaf gecbf dfcage bdacg ed bedf ced adcbefg gebcd | ed bcgafe cdgba cbgef
 egadfb cdbfeg cegd fecab cgb gbdefca cg fgcdab egfdb bfceg | gbdfcae bgc cg cgb
 gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce""".splitlines()
+
+
+# move up 5 lines
+MOVE_UP = "\x1B[5F"
+
+
+def display_digits(digits: list[str]) -> None:
+    # top line
+    line_1 = " ".join(" - " if "a" in digit else "   " for digit in digits)
+    # top vertical lines
+    line_2 = " ".join(
+        f'{"|" if "b" in digit else " "} {"|" if "c" in digit else " "}'
+        for digit in digits
+    )
+    # middle line
+    line_3 = " ".join(" - " if "d" in digit else "   " for digit in digits)
+    # bottom vertical lines
+    line_4 = " ".join(
+        f'{"|" if "e" in digit else " "} {"|" if "f" in digit else " "}'
+        for digit in digits
+    )
+    # bottom line
+    line_5 = " ".join(" - " if "g" in digit else "   " for digit in digits)
+    print(MOVE_UP + line_1)
+    print(line_2)
+    print(line_3)
+    print(line_4)
+    print(line_5)
 
 
 def part_one(puzzle: Iterable[str]) -> int:
@@ -33,7 +62,7 @@ def sub_out_words(words: Iterable[str], cipher: tuple[str]) -> list[str]:
     return output
 
 
-def decode_line(line: str) -> int:
+def decode_line(line: str, display: bool = False) -> int:
     expected_outputs = {
         "abcefg": 0,
         "cf": 1,
@@ -52,10 +81,15 @@ def decode_line(line: str) -> int:
     # so we might be able to brute force it
     perms = list(permutations("abcdefg"))
     in_words, out_words = [i.strip().split() for i in line.split("|")]
+    if display:
+        # print 6 lines so we don't wreck the console (and have a space between digits for readability)
+        print("\n\n\n\n\n")
     for candidate in perms:
         # 'abcdefg' should become 'deafgbc'
 
         decoded_inputs = sub_out_words(in_words, candidate)
+        if display:
+            display_digits(decoded_inputs)
         if set(decoded_inputs) == targeted_words:
             decoded_output = sub_out_words(out_words, candidate)
             return int("".join(str(expected_outputs[word]) for word in decoded_output))
@@ -63,8 +97,8 @@ def decode_line(line: str) -> int:
     raise ValueError(f"Did not get a winner from {line}")
 
 
-def part_two(puzzle: Iterable[str]) -> int:
-    return sum(decode_line(line) for line in puzzle)
+def part_two(puzzle: Iterable[str], display: bool = False) -> int:
+    return sum(decode_line(line, display) for line in puzzle)
 
 
 def main():
@@ -78,7 +112,7 @@ def main():
     with open("day08.txt") as infile:
         puzzle = [line.strip() for line in infile]
     print(part_one(puzzle))
-    print(part_two(puzzle))
+    print(part_two(puzzle, "display" in sys.argv))
 
 
 if __name__ == "__main__":
