@@ -85,8 +85,6 @@ def decode_line(line: str, display: bool = False) -> int:
         # print 6 lines so we don't wreck the console (and have a space between digits for readability)
         print("\n\n\n\n\n")
     for candidate in perms:
-        # 'abcdefg' should become 'deafgbc'
-
         decoded_inputs = sub_out_words(in_words, candidate)
         if display:
             display_digits(decoded_inputs)
