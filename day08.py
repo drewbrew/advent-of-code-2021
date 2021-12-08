@@ -18,6 +18,24 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
 # move up 5 lines
 MOVE_UP = "\x1B[5F"
 
+# oh, hey, this is a substitution cipher
+# and we only have 10 inputs and outputs
+# so we might be able to brute force it
+PERMUTATIONS = list(permutations("abcdefg"))
+EXPECTED_OUTPUTS = {
+    "abcefg": 0,
+    "cf": 1,
+    "acdeg": 2,
+    "acdfg": 3,
+    "bcdf": 4,
+    "abdfg": 5,
+    "abdefg": 6,
+    "acf": 7,
+    "abcdefg": 8,
+    "abcdfg": 9,
+}
+TARGETED_WORDS = set(EXPECTED_OUTPUTS)
+
 
 def display_digits(digits: list[str]) -> None:
     # top line
@@ -63,36 +81,20 @@ def sub_out_words(words: Iterable[str], cipher: tuple[str]) -> list[str]:
 
 
 def decode_line(line: str, display: bool = False) -> int:
-    expected_outputs = {
-        "abcefg": 0,
-        "cf": 1,
-        "acdeg": 2,
-        "acdfg": 3,
-        "bcdf": 4,
-        "abdfg": 5,
-        "abdefg": 6,
-        "acf": 7,
-        "abcdefg": 8,
-        "abcdfg": 9,
-    }
-    targeted_words = set(expected_outputs)
-    # oh, hey, this is a substitution cipher
-    # and we only have 10 inputs and outputs
-    # so we might be able to brute force it
-    perms = list(permutations("abcdefg"))
+
     in_words, out_words = [i.strip().split() for i in line.split("|")]
     if display:
         # print 6 lines so we don't wreck the console (and have a space between digits for readability)
         print("\n\n\n\n\n")
-    for candidate in perms:
+    for candidate in PERMUTATIONS:
         decoded_inputs = sub_out_words(in_words, candidate)
         if display:
             display_digits(decoded_inputs)
-        if set(decoded_inputs) == targeted_words:
+        if set(decoded_inputs) == TARGETED_WORDS:
             decoded_output = sub_out_words(out_words, candidate)
             output = 0
             for word in decoded_output:
-                output = 10 * output + expected_outputs[word]
+                output = 10 * output + EXPECTED_OUTPUTS[word]
             return output
 
     raise ValueError(f"Did not get a winner from {line}")
