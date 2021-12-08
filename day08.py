@@ -22,6 +22,7 @@ MOVE_UP = "\x1B[5F"
 # and we only have 10 inputs and outputs
 # so we might be able to brute force it
 PERMUTATIONS = list(permutations("abcdefg"))
+# when these segments are in the decoded word, then this must be the number
 EXPECTED_OUTPUTS = {
     "abcefg": 0,
     "cf": 1,
@@ -34,6 +35,7 @@ EXPECTED_OUTPUTS = {
     "abcdefg": 8,
     "abcdfg": 9,
 }
+# use a set for fastest comparison
 TARGETED_WORDS = set(EXPECTED_OUTPUTS)
 
 
@@ -91,6 +93,7 @@ def decode_line(line: str, display: bool = False) -> int:
         if display:
             display_digits(decoded_inputs)
         if set(decoded_inputs) == TARGETED_WORDS:
+            # we have a winner! decode the output and convert that to an int
             decoded_output = sub_out_words(out_words, candidate)
             output = 0
             for word in decoded_output:
