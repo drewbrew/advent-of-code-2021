@@ -90,7 +90,10 @@ def decode_line(line: str, display: bool = False) -> int:
             display_digits(decoded_inputs)
         if set(decoded_inputs) == targeted_words:
             decoded_output = sub_out_words(out_words, candidate)
-            return int("".join(str(expected_outputs[word]) for word in decoded_output))
+            output = 0
+            for word in decoded_output:
+                output = 10 * output + expected_outputs[word]
+            return output
 
     raise ValueError(f"Did not get a winner from {line}")
 
