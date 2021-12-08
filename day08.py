@@ -73,12 +73,8 @@ def part_one(puzzle: Iterable[str]) -> int:
 
 
 def sub_out_words(words: Iterable[str], cipher: tuple[str]) -> list[str]:
-    output = []
-    for word in words:
-        new_word = ""
-        for char in word:
-            new_word += cipher[ord(char) - ord("a")]
-        output.append("".join(sorted(i for i in new_word)))
+    trans_table = str.maketrans('abcdefg', ''.join(cipher))
+    output = [''.join(sorted(word.translate(trans_table))) for word in words]
     return output
 
 
