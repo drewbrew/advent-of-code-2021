@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 
 TEST_INPUT = """6,10
