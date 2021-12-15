@@ -55,7 +55,7 @@ def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], 
         ]
         if risk == 8:
             assert risk_scales == [9, 1, 2, 3, 4, 5, 6, 7]
-        # 1 step each way (9 on example)
+        # 1 step each way (9 on the example)
         grid[x + width, y] = risk_scales[0]
         grid[x, y + width] = risk_scales[0]
         # 2 steps each way (1)
@@ -108,21 +108,15 @@ def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], 
 def part_two(puzzle: Iterable[str]) -> int:
     graph, grid = scale_puzzle(puzzle)
     path = shortest_path(graph, (0, 0), max(grid), weight="weight")
-    risk = 0
-    for x, y in path[1:]:
-        risk += grid[x, y]
-    return risk
+    return sum(grid[x, y] for x, y in path[1:])
 
 
 def part_one(puzzle: Iterable[str]) -> int:
     graph = parse_input(puzzle)
     path = shortest_path(
-        graph, (0, 0), (len(puzzle[0]) - 1, len(puzzle) - 1), weight="weight"
+        graph, (0, 0), max(graph.nodes), weight="weight"
     )
-    risk = 0
-    for x, y in path[1:]:
-        risk += int(puzzle[y][x])
-    return risk
+    return sum(int(puzzle[y][x]) for x, y in path[1:])
 
 
 def main():
