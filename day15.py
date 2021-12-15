@@ -37,8 +37,8 @@ def display_grid(grid: dict[tuple[int, int], int]):
     max_x, max_y = max(grid)
     for y in range(max_y + 1):
         for x in range(max_x + 1):
-            print(grid.get((x, y), ' '), end='')
-        print('')
+            print(grid.get((x, y), " "), end="")
+        print("")
 
 
 def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], int]]:
@@ -50,7 +50,9 @@ def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], 
     width = len(puzzle)
     assert width == len(puzzle[0])
     for (x, y), risk in list(grid.items()):
-        risk_scales = [risk + i if risk + i < 10 else (risk + i) % 10 + 1 for i in range(1, 9)]
+        risk_scales = [
+            risk + i if risk + i < 10 else (risk + i) % 10 + 1 for i in range(1, 9)
+        ]
         if risk == 8:
             assert risk_scales == [9, 1, 2, 3, 4, 5, 6, 7]
         # 1 step each way (9 on example)
@@ -86,8 +88,15 @@ def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], 
         # 8 (7)
         grid[x + width * 4, y + width * 4] = risk_scales[7]
 
-    for x, y, in grid:
-        neighbors = [(pos, grid[pos]) for pos in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if pos in grid]
+    for (
+        x,
+        y,
+    ) in grid:
+        neighbors = [
+            (pos, grid[pos])
+            for pos in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))
+            if pos in grid
+        ]
         for (dx, dy), risk in neighbors:
             if (dx, dy) == (0, 0):
                 continue
@@ -98,30 +107,34 @@ def scale_puzzle(puzzle: Iterable[str]) -> tuple[DiGraph, dict[tuple[int, int], 
 
 def part_two(puzzle: Iterable[str]) -> int:
     graph, grid = scale_puzzle(puzzle)
-    path = shortest_path(graph, (0, 0), max(grid), weight='weight')
+    path = shortest_path(graph, (0, 0), max(grid), weight="weight")
     risk = 0
     for x, y in path[1:]:
         risk += grid[x, y]
     return risk
 
+
 def part_one(puzzle: Iterable[str]) -> int:
     graph = parse_input(puzzle)
-    path = shortest_path(graph, (0, 0), (len(puzzle[0]) - 1, len(puzzle) - 1), weight='weight')
+    path = shortest_path(
+        graph, (0, 0), (len(puzzle[0]) - 1, len(puzzle) - 1), weight="weight"
+    )
     risk = 0
     for x, y in path[1:]:
         risk += int(puzzle[y][x])
     return risk
+
 
 def main():
     part_one_result = part_one(TEST_INPUT)
     assert part_one_result == 40, part_one_result
     part_two_result = part_two(TEST_INPUT)
     assert part_two_result == 315, part_two_result
-    with open('day15.txt') as infile:
+    with open("day15.txt") as infile:
         puzzle = [line.strip() for line in infile]
     print(part_one(puzzle))
     print(part_two(puzzle))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
