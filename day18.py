@@ -44,6 +44,8 @@ class Snailfish:
     def needs_exploding(self) -> bool:
         if self.depth >= 4:
             return True
+        # recursively work through the left and right trees to determine
+        # if we get below a depth of 4 anywhere
         needs_exploding = False
         if isinstance(self.left, Snailfish):
             needs_exploding = needs_exploding or self.left.needs_exploding()
@@ -69,6 +71,7 @@ class Snailfish:
             if isinstance(self.right, int):
                 self.right += right
             else:
+                # this right, left, right logic gets dizzying fast but it works
                 self.right.add_to_left(right)
             return left, 0
         if isinstance(self.right, Snailfish):
@@ -89,10 +92,13 @@ class Snailfish:
         if isinstance(self.left, int):
             if self.left >= 10:
                 self.left = Snailfish(
-                    [self.left // 2, self.left // 2 + self.left % 2], self.depth + 1
+                    # use integer division + modulus to make rounding down/up easy
+                    [self.left // 2, self.left // 2 + self.left % 2],
+                    self.depth + 1,
                 )
                 return True
         else:
+            # keep going down the left side rabbit hole first
             is_split = self.left.split()
         if not is_split:
             if isinstance(self.right, int):
