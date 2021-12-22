@@ -1,4 +1,5 @@
-from typing import Iterable
+from typing import Generator, Iterable
+import datetime
 
 
 TEST_INPUT = """on x=-20..26,y=-36..17,z=-47..7
@@ -24,11 +25,12 @@ on x=-41..9,y=-7..43,z=-33..15
 on x=-54112..-39298,y=-85059..-49293,z=-27449..7877
 on x=967..23432,y=45373..81175,z=27513..53682""".splitlines()
 
-COORDINATE = tuple[int, int]
-PUZZLE = list[tuple[bool, COORDINATE, COORDINATE, COORDINATE]]
+COORDINATE_PAIR = tuple[int, int]
+REGION = tuple[COORDINATE_PAIR, COORDINATE_PAIR, COORDINATE_PAIR]
+PUZZLE = list[tuple[bool, COORDINATE_PAIR, COORDINATE_PAIR, COORDINATE_PAIR]]
 
 
-def parse_input(puzzle: Iterable[str]) -> PUZZLE:
+def parse_input(puzzle: Iterable[str], is_part_one: bool = True) -> PUZZLE:
     result = []
     for line in puzzle:
         state, coords = line.split()
@@ -38,7 +40,14 @@ def parse_input(puzzle: Iterable[str]) -> PUZZLE:
         y_start, y_end = sorted([int(i) for i in y_str.split("..")])
         z_start, z_end = sorted([int(i) for i in z_str.split("..")])
         result.append(
-            (on, (x_start, x_end + 1), (y_start, y_end + 1), (z_start, z_end + 1))
+            # the fudge factor here makes the naive solution easy in part 1
+            # as I can easily do a range() call
+            (
+                on,
+                (x_start, x_end + is_part_one),
+                (y_start, y_end + is_part_one),
+                (z_start, z_end + is_part_one),
+            )
         )
     return result
 
@@ -56,44 +65,104 @@ def part_one(puzzle: Iterable[str], max_coord: int = 50) -> int:
     return len(grid)
 
 
-def is_lit(x: int, y: int, z: int, rules: PUZZLE) -> bool:
-    current_state = False
-    for state, (x_min, x_max), (y_min, y_max), (z_min, z_max) in rules:
-        if state == current_state:
-            continue
-        if x < x_min or x >= x_max:
-            continue
-        if y < y_min or y >= y_max:
-            continue
-        if z < z_min or z >= z_max:
-            continue
-        current_state = state
-    return current_state
+def cuboid_reboot(instructions: PUZZLE) -> list[REGION]:
+    regions: list[REGION] = []
+    active_regions: list[REGION] = []
+    for state, x_values, y_values, z_values in instructions:
+        active_regions.clear()
+        for x2_values, y2_values, z2_values in regions:
+            # for all existing regions (read: last instruction's active regions),
+            # subtract the regions in the instruction from them
+            active_regions.extend(
+                region_subtract(
+                    (x2_values, y2_values, z2_values),
+                    (x_values, y_values, z_values),
+                )
+            )
+        if state:
+            # save them to the active regions
+            active_regions.append((x_values, y_values, z_values))
+        # then swap active regions with target regions
+        # because the active regions are all we care about
+        regions, active_regions = active_regions, regions
+    # this is the final list of active regions
+    return regions
+
+
+def region_subtract(
+    region_1: REGION,
+    region_2: REGION,
+) -> Generator[REGION, None, None]:
+    """Generate all possible regions formed by subtracting region 2 from region 1"""
+    if region_1 != region_2:
+        if not regions_overlap(region_1, region_2):
+            yield region_1
+
+        else:
+            (x_1_min, x_1_max), (y_1_min, y_1_max), (z_1_min, z_1_max) = region_1
+            (x_2_min, x_2_max), (y_2_min, y_2_max), (z_2_min, z_2_max) = region_2
+            # we have 3 boundaries in each dimension to consider:
+            # 1. the lower end of both regions (offset by 1 in the removal region)
+            # 2. the middle point where r1 ends and r2 begins or vice versa
+            # 3. the higher end of both regions (same offset in the reverse direction)
+            for x_index, (x_min, x_max) in enumerate(
+                zip(
+                    (x_1_min, max(x_1_min, x_2_min), x_2_max + 1),
+                    (x_2_min - 1, min(x_1_max, x_2_max), x_1_max),
+                )
+            ):
+                if x_min > x_max:
+                    continue
+                for y_index, (y_min, y_max) in enumerate(
+                    zip(
+                        (y_1_min, max(y_1_min, y_2_min), y_2_max + 1),
+                        (y_2_min - 1, min(y_1_max, y_2_max), y_1_max),
+                    )
+                ):
+                    if y_min > y_max:
+                        continue
+                    for z_index, (z_min, z_max) in enumerate(
+                        zip(
+                            (z_1_min, max(z_1_min, z_2_min), z_2_max + 1),
+                            (z_2_min - 1, min(z_1_max, z_2_max), z_1_max),
+                        )
+                    ):
+                        if z_min > z_max:
+                            continue
+                        if x_index == 1 and y_index == 1 and z_index == 1:
+                            # catch factor: don't include the max/min pair to avoid
+                            # the dead center of the cuboid
+                            continue
+                        yield (x_min, x_max), (y_min, y_max), (z_min, z_max)
+
+
+def regions_overlap(region_1: REGION, region_2: REGION) -> bool:
+    (x_1_min, x_1_max), (y_1_min, y_1_max), (z_1_min, z_1_max) = region_1
+    (x_2_min, x_2_max), (y_2_min, y_2_max), (z_2_min, z_2_max) = region_2
+    return (
+        x_2_min <= x_1_max
+        and x_2_max >= x_1_min
+        and y_2_min <= y_1_max
+        and y_2_max >= y_1_min
+        and z_2_min <= z_1_max
+        and z_2_max >= z_1_min
+    )
+
+
+def region_size(region: REGION) -> int:
+    (x_min, x_max), (y_min, y_max), (x_min, z_max) = region
+    return (x_max - x_min + 1) * (y_max - y_min + 1) * (z_max - x_min + 1)
 
 
 def part_two(puzzle: Iterable[str]) -> int:
-    rules = parse_input(puzzle)
-    count = 0
-    min_x = min(x_min for _, (x_min, _), (_, _), (_, _) in rules)
-    max_x = max(x_max for _, (_, x_max), (_, _), (_, _) in rules)
-    min_y = min(y_min for _, (_, _), (y_min, _), (_, _) in rules)
-    max_y = max(y_max for _, (_, _), (_, y_max), (_, _) in rules)
-    min_z = min(z_min for _, (_, _), (_, _), (z_min, _) in rules)
-    max_z = max(z_max for _, (_, _), (_, _), (_, z_max) in rules)
-    print(min_x, max_x, min_y, max_y, min_z, max_z)
-    for x in range(min_x, max_x):
-        print(x, count)
-        for y in range(min_y, max_y):
-            for z in range(min_z, max_z):
-                count += is_lit(x, y, z, rules)
-    return count
+    rules = parse_input(puzzle, is_part_one=False)
+    regions = cuboid_reboot(rules)
+    return sum(region_size(region) for region in regions)
 
 
 def main():
     part_one_result = part_one(TEST_INPUT)
     assert part_one_result == 590784, part_one_result
-    part_two_result = part_two(TEST_INPUT)
-    assert part_two_result == 2758514936282235, part_two_result
     with open("day22.txt") as infile:
         puzzle = [line.strip() for line in infile]
     print(part_one(puzzle=puzzle))
