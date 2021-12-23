@@ -59,8 +59,12 @@ PUZZLE_STATE = tuple[ROOM_STATE, HALL_STATE, int]
 
 
 def parse_input(puzzle: list[str]) -> list[tuple[str]]:
-    amphis = [char for line in puzzle[2:4] for char in line if char in set("ABCD")]
-    return list(zip(amphis[:4], amphis[4:]))
+    rooms = [[], [], [], []]
+    for line in puzzle[2:-1]:
+        for index, char in enumerate(c for c in line if c in "ABCD"):
+            rooms[index].append(char)
+
+    return [tuple(room) for room in rooms]
 
 
 def assert_valid_state(hallway, side_rooms):
@@ -172,6 +176,7 @@ def move_pieces_to_hall(
         if plucked is None:
             continue
         move_cost, source_char, new_room = plucked
+        assert len(new_room) == len(room)
         new_rooms = side_rooms[:room_index] + [new_room] + side_rooms[room_index + 1 :]
         base_new_rooms = new_rooms[:]
         hallway_start = 2 + (room_index * 2)
