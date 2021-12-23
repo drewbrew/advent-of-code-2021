@@ -132,27 +132,46 @@ def step_down_score(
     return score, tuple(new_room)
 
 
+def pluck_piece_from_side_room(
+    room: tuple[str, str], expected_char: str
+) -> Optional[tuple[int, str, tuple[str, str]]]:
+    score = 0
+    if set(room) == {"."}:
+        return None
+    new_room = room[:]
+    for index, char in enumerate(room):
+        if char == ".":
+            score += 1
+            continue
+        if char == expected_char:
+            remainder = room[index + 1 :]
+            if not remainder or set(remainder) == {expected_char}:
+                # nothing to pick
+                return None
+        # pick this one
+        new_room = list(room)
+        new_room[index] = "."
+        score += 1
+        return score, char, tuple(new_room)
+    return score, char, tuple(new_room)
+
+
 def move_pieces_to_hall(
     hallway_state: HALL_STATE, side_rooms: ROOM_STATE, current_score: int
 ) -> list[PUZZLE_STATE]:
     result = []
     for room_index, room in enumerate(side_rooms):
-        if set(room) == {'.'}:
+        if set(room) == {"."}:
             # empty
             continue
         target_char = chr(ord("A") + room_index)
         if set(room) == {target_char}:
             # already full
             continue
-        move_cost = 0
-        if room[0] != ".":
-            source_char = room[0]
-            move_cost += 1
-            new_room = (".", room[1])
-        else:
-            source_char = room[1]
-            new_room = (".", ".")
-            move_cost += 2
+        plucked = pluck_piece_from_side_room(room, target_char)
+        if plucked is None:
+            continue
+        move_cost, source_char, new_room = plucked
         new_rooms = side_rooms[:room_index] + [new_room] + side_rooms[room_index + 1 :]
         base_new_rooms = new_rooms[:]
         hallway_start = 2 + (room_index * 2)
@@ -322,71 +341,6 @@ def part_one(puzzle: list[str]) -> int:
     if puzzle == TEST_INPUT:
         print(test_states_hit)
     return min_score
-    # 15324 is too high
-    # 11326 is too low
-    # visually solving this even though I know it's a trap for part 2
-    # 1. Move upper A to the second left
-    # #.A.........#
-    # ###B#D#C#.###
-    #   #C#D#B#A#
-    #   #########
-    cost = 9
-    # 2. move lower A to second right
-    # #.A.......A.#
-    # ###B#D#C#.###
-    #   #C#D#B#.#
-    #   #########
-    cost += 3
-    # 3. move each D into its hallway
-    # #.A.......A.#
-    # ###B#.#C#D###
-    #   #C#.#B#D#
-    #   #########
-    cost += 7000
-    cost += 7000
-    # 4; move the B that's in hallway A into its hallway
-    # #.A.......A.#
-    # ###.#.#C#D###
-    #   #C#B#B#D#
-    #   #########
-    cost += 50
-    # 5. Move the C that's on top of the B up and to the right
-    # #.A.....C..#
-    # ###.#.#.#D###
-    #   #C#B#B#D#
-    #   #########
-    cost += 200
-    # 6. Move the B that was underneath it into its hallway
-    # #.A.....C.A.#
-    # ###.#B#.#D###
-    #   #C#B#.#D#
-    #   #########
-    cost += 50
-    # 7. move that C back into its hallway
-    # #.A.......A.#
-    # ###.#B#.#D###
-    #   #C#B#C#D#
-    #   #########
-    cost += 300
-    # 8. move the last C from the A column into its hallway
-    # #.A.......A.#
-    # ###.#B#C#D###
-    #   #.#B#C#D#
-    #   #########
-    cost += 700
-    # 9. move the first A into its hallway
-    # #.........A.#
-    # ###.#B#C#D###
-    #   #A#B#C#D#
-    #   #########
-    cost += 3
-    # 10. Move the second A into its hallway
-    # #...........#
-    # ###A#B#C#D###
-    #   #A#B#C#D#
-    #   #########
-    cost += 9
-    return cost
 
 
 def main():
@@ -397,6 +351,18 @@ def main():
         (".", "."), "B"
     )
     assert step_down_score((".", ".", ".", "A"), "A") == (3, (".", ".", "A", "A"))
+    assert pluck_piece_from_side_room((".", ".", "A", "B"), "A") == (
+        3,
+        "A",
+        (".", ".", ".", "B"),
+    )
+    assert pluck_piece_from_side_room((".", ".", "B", "B"), "A") == (
+        3,
+        "B",
+        (".", ".", ".", "B"),
+    )
+    assert pluck_piece_from_side_room((".", ".", "B", "B"), "B") is None
+    assert pluck_piece_from_side_room((".", "."), "A") is None
     p1_result = part_one(TEST_INPUT)
     # p2_result = part_one(TEST_PART_TWO_INPUT)
     assert p1_result == 12521, p1_result
