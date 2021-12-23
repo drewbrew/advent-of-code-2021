@@ -137,11 +137,11 @@ def move_pieces_to_hall(
 ) -> list[PUZZLE_STATE]:
     result = []
     for room_index, room in enumerate(side_rooms):
-        if room == (".", "."):
+        if set(room) == {'.'}:
             # empty
             continue
         target_char = chr(ord("A") + room_index)
-        if room == (target_char, target_char):
+        if set(room) == {target_char}:
             # already full
             continue
         move_cost = 0
