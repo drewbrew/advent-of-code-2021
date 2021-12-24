@@ -67,14 +67,15 @@ def parse_input(puzzle: list[str]) -> list[tuple[str]]:
     return [tuple(room) for room in rooms]
 
 
-def assert_valid_state(hallway, side_rooms):
+def assert_valid_state(hallway: HALL_STATE, side_rooms: ROOM_STATE):
     count = Counter(hallway)
+    expected_total = len(side_rooms[0])
     for room in side_rooms:
         count += Counter(room)
     for index, char in enumerate(hallway):
         if index in {2, 4, 6, 8}:
             assert char == ".", (index, char)
-    assert all(val == 2 for key, val in count.items() if key != "."), (
+    assert all(val == expected_total for key, val in count.items() if key != "."), (
         hallway,
         side_rooms,
         count,
@@ -114,6 +115,7 @@ def move_pieces_from_hall(
         new_rooms[room_index] = tuple(new_room)
         score = current_score + (base_score * MOVEMENT_COSTS[char])
         assert len(new_rooms) == 4, new_rooms
+        assert_valid_state(new_hallway, new_rooms)
         result.append((new_hallway, new_rooms, score))
     return result
 
@@ -128,7 +130,10 @@ def step_down_score(
             score += 1
             new_room = list(side_room[:])
             new_room[index] = expected_char
-        elif char != expected_char:
+        elif char != expected_char or (
+            side_room[index:]
+            and not set(side_room[index:]).issubset({".", expected_char})
+        ):
             return None
         else:
             assert index != 0
@@ -203,6 +208,7 @@ def move_pieces_to_hall(
                     storage_cost += step_down_modifier
                     new_side_rooms = base_new_rooms[:]
                     new_side_rooms[ROOMS[source_char]] = new_target_room
+                    assert_valid_state(hallway_state, new_side_rooms)
                     result.append(
                         (
                             hallway_state[:],
@@ -220,6 +226,7 @@ def move_pieces_to_hall(
                 move_cost * MOVEMENT_COSTS[source_char]
             )
             assert len(base_new_rooms) == 4, base_new_rooms
+            assert_valid_state(new_hallway, base_new_rooms)
             result.append((new_hallway, base_new_rooms, intermediate_cost))
         # now go left
         move_cost = base_cost
@@ -250,6 +257,7 @@ def move_pieces_to_hall(
                     new_side_rooms = base_new_rooms[:]
                     new_side_rooms[ROOMS[source_char]] = new_target_room
                     assert len(new_side_rooms) == 4, new_side_rooms
+                    assert_valid_state(hallway_state, new_side_rooms)
                     result.append(
                         (
                             hallway_state[:],
@@ -264,6 +272,7 @@ def move_pieces_to_hall(
             new_hallway[index] = source_char
             intermediate_cost = current_score + move_cost * MOVEMENT_COSTS[source_char]
             assert len(base_new_rooms) == 4, base_new_rooms
+            assert_valid_state(new_hallway, base_new_rooms)
             result.append((new_hallway, base_new_rooms, intermediate_cost))
     return result
 
@@ -278,8 +287,15 @@ def move_pieces(
     return candidates
 
 
+def parse_interim(interim_grid: str) -> PUZZLE_STATE:
+    lines = interim_grid.splitlines()
+    hallway_state = [char for char in lines[1][1:-1]]
+    return hallway_state, tuple(parse_input(lines))
+
+
 def part_one(puzzle: list[str]) -> int:
     order = parse_input(puzzle)
+    print("puzzle is", order)
     queue = Queue()
     min_score = 75000
     states_seen = {}
@@ -310,20 +326,225 @@ def part_one(puzzle: list[str]) -> int:
         ),
         (["."] * HALLWAY_WIDTH, (("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"))),
     ]
+    p2_states_expected = [
+        parse_interim(state)
+        for state in """#############
+#..........D#
+###B#C#B#.###
+  #D#C#B#A#
+  #D#B#A#C#
+  #A#D#C#A#
+  #########
+
+#############
+#A.........D#
+###B#C#B#.###
+  #D#C#B#.#
+  #D#B#A#C#
+  #A#D#C#A#
+  #########
+
+#############
+#A........BD#
+###B#C#.#.###
+  #D#C#B#.#
+  #D#B#A#C#
+  #A#D#C#A#
+  #########
+
+#############
+#A......B.BD#
+###B#C#.#.###
+  #D#C#.#.#
+  #D#B#A#C#
+  #A#D#C#A#
+  #########
+
+#############
+#AA.....B.BD#
+###B#C#.#.###
+  #D#C#.#.#
+  #D#B#.#C#
+  #A#D#C#A#
+  #########
+
+#############
+#AA.....B.BD#
+###B#.#.#.###
+  #D#C#.#.#
+  #D#B#C#C#
+  #A#D#C#A#
+  #########
+
+#############
+#AA.....B.BD#
+###B#.#.#.###
+  #D#.#C#.#
+  #D#B#C#C#
+  #A#D#C#A#
+  #########
+
+#############
+#AA...B.B.BD#
+###B#.#.#.###
+  #D#.#C#.#
+  #D#.#C#C#
+  #A#D#C#A#
+  #########
+
+#############
+#AA.D.B.B.BD#
+###B#.#.#.###
+  #D#.#C#.#
+  #D#.#C#C#
+  #A#.#C#A#
+  #########
+
+#############
+#AA.D...B.BD#
+###B#.#.#.###
+  #D#.#C#.#
+  #D#.#C#C#
+  #A#B#C#A#
+  #########
+
+#############
+#AA.D.....BD#
+###B#.#.#.###
+  #D#.#C#.#
+  #D#B#C#C#
+  #A#B#C#A#
+  #########
+
+#############
+#AA.D......D#
+###B#.#.#.###
+  #D#B#C#.#
+  #D#B#C#C#
+  #A#B#C#A#
+  #########
+
+#############
+#AA.D......D#
+###B#.#C#.###
+  #D#B#C#.#
+  #D#B#C#.#
+  #A#B#C#A#
+  #########
+
+#############
+#AA.D.....AD#
+###B#.#C#.###
+  #D#B#C#.#
+  #D#B#C#.#
+  #A#B#C#.#
+  #########
+
+#############
+#AA.......AD#
+###B#.#C#.###
+  #D#B#C#.#
+  #D#B#C#.#
+  #A#B#C#D#
+  #########
+
+#############
+#AA.......AD#
+###.#B#C#.###
+  #D#B#C#.#
+  #D#B#C#.#
+  #A#B#C#D#
+  #########
+
+#############
+#AA.......AD#
+###.#B#C#.###
+  #.#B#C#.#
+  #D#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#AA.D.....AD#
+###.#B#C#.###
+  #.#B#C#.#
+  #.#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#A..D.....AD#
+###.#B#C#.###
+  #.#B#C#.#
+  #A#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#...D.....AD#
+###.#B#C#.###
+  #A#B#C#.#
+  #A#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#.........AD#
+###.#B#C#.###
+  #A#B#C#D#
+  #A#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#..........D#
+###A#B#C#.###
+  #A#B#C#D#
+  #A#B#C#D#
+  #A#B#C#D#
+  #########
+
+#############
+#...........#
+###A#B#C#D###
+  #A#B#C#D#
+  #A#B#C#D#
+  #A#B#C#D#
+  #########""".split(
+            "\n\n"
+        )
+    ]
+    print("p2 candidates", p2_states_expected)
     test_states_hit = []
-    target = [("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")]
+    target = [tuple(char for _ in range(len(order[0]))) for char in "ABCD"]
+    print("target is", target)
     for candidate in move_pieces(["."] * HALLWAY_WIDTH, order, 0):
         print(candidate)
-        queue.put(candidate)
+        queue.put(list(candidate) + [[]])
     while not queue.empty():
-        hallway, side_rooms, score = queue.get(block=False)
+        hallway, side_rooms, score, previous_states = queue.get(block=False)
         for new_hall, new_rooms, new_score in move_pieces(hallway, side_rooms, score):
             assert new_score > score
             if list(new_rooms) == target:
-                print("win", new_score)
                 if new_score < min_score:
                     min_score = new_score
                     continue
+            if (list(hallway), tuple(side_rooms)) in p2_states_expected and (
+                list(new_hall),
+                tuple(new_rooms),
+            ) in p2_states_expected:
+                print(
+                    "p2 candidate",
+                    "".join(new_hall),
+                    ["".join(i) for i in new_rooms],
+                    new_score,
+                    "from",
+                    "".join(hallway),
+                    ["".join(i) for i in side_rooms],
+                    score,
+                    "steps so far",
+                    previous_states,
+                )
             dict_key = (tuple(new_hall), tuple(new_rooms))
             try:
                 existing_state_score = states_seen[dict_key]
@@ -332,17 +553,56 @@ def part_one(puzzle: list[str]) -> int:
             else:
                 # prune stuff we've already seen
                 if existing_state_score <= new_score:
+                    if (list(new_hall), tuple(new_rooms)) in p2_states_expected:
+                        print(
+                            "discarding",
+                            "".join(new_hall),
+                            ["".join(i) for i in new_rooms],
+                            f"because {existing_state_score} is better than {new_score}",
+                        )
                     continue
                 states_seen[dict_key] = new_score
             if (
                 puzzle == TEST_INPUT
                 and (list(new_hall), tuple(new_rooms)) in test_states_expected
             ):
-                print("found expected state", new_hall, new_rooms, score)
+                print(
+                    "found expected state",
+                    "".join(new_hall),
+                    ["".join(i) for i in new_rooms],
+                    new_score,
+                    "from",
+                    "".join(hallway),
+                    score,
+                )
                 test_states_hit.append((new_hall, new_rooms))
+            if (
+                puzzle == TEST_PART_TWO_INPUT
+                and (list(new_hall), tuple(new_rooms)) in p2_states_expected
+            ):
+                print(
+                    "found p2 expected state",
+                    "".join(new_hall),
+                    ["".join(i) for i in new_rooms],
+                    new_score,
+                    "from",
+                    "".join(hallway),
+                    ["".join(i) for i in side_rooms],
+                    score,
+                    "steps so far",
+                    previous_states,
+                )
             if new_score > min_score:
                 continue
-            queue.put((new_hall, new_rooms, new_score))
+            queue.put(
+                (
+                    new_hall,
+                    new_rooms,
+                    new_score,
+                    previous_states
+                    + [("".join(hallway), ["".join(i) for i in side_rooms], score)],
+                )
+            )
     if puzzle == TEST_INPUT:
         print(test_states_hit)
     return min_score
@@ -367,13 +627,18 @@ def main():
         (".", ".", ".", "B"),
     )
     assert pluck_piece_from_side_room((".", ".", "B", "B"), "B") is None
+    assert pluck_piece_from_side_room(("C", "C", "D", "B"), "C") == (
+        1,
+        "C",
+        (".", "C", "D", "B"),
+    )
     assert pluck_piece_from_side_room((".", "."), "A") is None
     p1_result = part_one(TEST_INPUT)
-    # p2_result = part_one(TEST_PART_TWO_INPUT)
+    p2_result = part_one(TEST_PART_TWO_INPUT)
     assert p1_result == 12521, p1_result
-    # assert p2_result == 44169, p2_result
+    assert p2_result == 44169, p2_result
     print(part_one(REAL_INPUT))
-    # print(part_one(PART_TWO_INPUT))
+    print(part_one(PART_TWO_INPUT))
 
 
 if __name__ == "__main__":
