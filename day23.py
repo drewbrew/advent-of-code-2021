@@ -1,5 +1,5 @@
+"""Day 23: rearranging amphipods"""
 from queue import Queue
-from collections import Counter
 from typing import Optional
 
 TEST_INPUT = """#############
@@ -67,9 +67,10 @@ def parse_input(puzzle: list[str]) -> list[tuple[str]]:
     return [tuple(room) for room in rooms]
 
 
-def move_pieces_from_hall(
-    hallway_state: HALL_STATE, side_rooms: ROOM_STATE, current_score: int
+def move_amphipods_from_hall(
+    hallway_state: HALL_STATE, side_rooms: ROOM_STATE, current_score: int,
 ) -> list[PUZZLE_STATE]:
+    """Find all possible moves made by taking an amphipod out of the hallway"""
     result = []
     for index, char in enumerate(hallway_state):
         if char == ".":
@@ -106,6 +107,7 @@ def move_pieces_from_hall(
 def step_down_score(
     side_room: tuple[str, str], expected_char: str
 ) -> Optional[tuple[int, tuple[str, str]]]:
+    """How much does it cost to descend to the lowest safe spot?"""
     score = 0
     for index, char in enumerate(side_room):
         if char == ".":
@@ -114,6 +116,7 @@ def step_down_score(
             new_room[index] = expected_char
         elif char != expected_char or (
             side_room[index:]
+            # they will only descend if there aren't any others in the room
             and not set(side_room[index:]).issubset({".", expected_char})
         ):
             return None
@@ -125,6 +128,7 @@ def step_down_score(
 def pluck_piece_from_side_room(
     room: tuple[str, str], expected_char: str
 ) -> Optional[tuple[int, str, tuple[str, str]]]:
+    """How much does it cost to pull an amphipod out of a given side room?"""
     score = 0
     if set(room) == {"."}:
         return None
@@ -146,9 +150,10 @@ def pluck_piece_from_side_room(
     return score, char, tuple(new_room)
 
 
-def move_pieces_to_hall(
+def move_amphipods_to_hall(
     hallway_state: HALL_STATE, side_rooms: ROOM_STATE, current_score: int
 ) -> list[PUZZLE_STATE]:
+    """Find all possible moves made by pulling an amphipod out of a side room"""
     result = []
     for room_index, room in enumerate(side_rooms):
         if set(room) == {"."}:
@@ -248,13 +253,14 @@ def move_pieces(
     hallway_state: HALL_STATE, side_rooms: ROOM_STATE, current_score: int
 ) -> list[PUZZLE_STATE]:
     """Attempt to move pieces, returning all possible candidates that aren't blocked"""
-    candidates = move_pieces_from_hall(
+    candidates = move_amphipods_from_hall(
         hallway_state, side_rooms, current_score
-    ) + move_pieces_to_hall(hallway_state, side_rooms, current_score)
+    ) + move_amphipods_to_hall(hallway_state, side_rooms, current_score)
     return candidates
 
 
 def part_one(puzzle: list[str]) -> int:
+    """Solve the puzzle!"""
     order = parse_input(puzzle)
     queue = Queue()
     min_score = 75000
